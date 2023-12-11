@@ -100,5 +100,5 @@ dat <- join %>%
 flextable(dat) %>% fontsize(size = 8) %>% fontsize(size = 9, part = "header") 
 ```
 
-
+cambio
 # Bibliografía
