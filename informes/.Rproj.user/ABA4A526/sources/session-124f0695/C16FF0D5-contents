@@ -1,0 +1,104 @@
+---
+title: "Monitoreo especializado de flora y fauna en zonas de conectividad del estado de Guanajuato"
+subtitle: "1er informe bimestral"
+author: 
+  - "Hernando Rodríguez-Correa"
+  - "Sofía Zorrilla Azcué" 
+  - "Lizeth Melissa Naranjo Bravo"
+date: today
+language: 
+  title-block-author-single: "Responsable"
+format:
+  docx:
+    reference-doc: "estilos.docx"
+    # toc: true
+    # toc-depth: 2
+    # toc-title: "Contenido"
+fig-dpi: 300
+output-file: "primer_informe.docx"
+bibliography: "bibliography1.bib"
+---
+
+# Métodos
+
+### Revisión bibliográfica
+
+La revisión bibliográfica de los encinos de Guanajuato se llevó a cabo de tres maneras, por medio de bases de datos públicas, revisión bibliográfica de artículos y la actualización de registros de la plataforma web Naturalista [@naturalista]. La búsqueda de bases de datos se realizó mediante la plataforma GBIF, que incluye datos de múltiples herbarios de México y otros países. Se seleccionaron los registros con coordenadas y se georeferenciaron manualmente aquellos que no contaban con coordenadas pero que tuvieran suficiente información en la descripción de la localidad de colecta. La taxonomía de todos los registros fue actualizada utilizando el Catálogo de autoridad taxonómica del género Quercus, Fagaceae en México [@gbif_catalogo]. Finalmente, se filtraron los registros cuya elevación estuviera muy lejos del rango de elevación publicado para cada especie, para ser verificados en salidas de campo posteriores.
+
+<br>
+
+Adicionalmente, se realizó una búsqueda de registros y listados florísticos de Guanajuato publicados en tesis y artículos científicos. Se utilizaron las siguientes palabras clave: "oaks", "Guanajuato", "Quercus", "México central", "Fagaceae" y buscadores como Scopus, Google Scholar, Dialnet, repositorios de tesis en línea (TESIUNAM, UGTO), etc. Para los registros obtenidos de regiones o polígonos, se utilizó el centroide del área como coordenada, y se les asignó el radio de un círculo que englobe el polígono como precisión. 
+
+<br>
+
+Por último, se revisaron los registros identificados como "Quercus" en la región de Guanajuato de la base de datos de Naturalista. Las imagenes con suficiente detalle fueron identificadas a nivel de especie y las demás se identificaron a nivel de género. La identificación se realizó utilizando recursos bibliográficos como claves taxonómicas para el género Quercus de la región del bajío y zonas aledañas [@citas]
+
+# Resultados preeliminares
+
+Se encontraron XXX registros en GBIF, de los cuales XXX fueron manualmente georeferenciados. Los resultados preeliminares indican que hay un total de 37 especies de encino en la región. Sin embargo, los registros menos abundantes aún deben ser validados. Adicionalmente, en la revisión bibliográfica se encontraron XX artículos y XX tesis de los cuales se obtuvieron XX número de registros que corresponden a XX especies.
+
+Las especies con más registros fueron *Quercus rugosa* (X%) seguida de *Q. eduardii* (X%) y *Q. potosina* (X%). En contraste, X% de las especies tienen menos de cinco registros [@fig-barras]. Las regiones dentro de Guanajuato que tuvieron un mayor número de registros fueron XX y XX. Preeliminarmente, se identificaron las zonas de XX y XX como posibles localidades de colecta. 
+
+
+```{r}
+#| echo: false
+#| warning: false
+#| fig-width: 9
+#| fig-height: 5
+
+
+library(tidyverse)
+library(googlesheets4)
+library(kableExtra)
+library(flextable)
+
+ss <-  "https://docs.google.com/spreadsheets/d/12eHA_LwHQ2m2EG441GP8XkquLYURjJfHkVZ2h699ZGM/edit?usp=sharing"
+
+data <- read_sheet(ss = ss, sheet = "registros_gbif") %>% filter(basisOfRecord == "PRESERVED_SPECIMEN")
+tax <- read_sheet(ss = ss, sheet = "tax_gbif") %>% filter(status == "ACCEPTED") %>% arrange(ID_SP) 
+ref <- read_sheet(ss = ss, sheet = "referencias")
+
+join <- left_join(data,tax,by = "ID_SP") %>% left_join(ref,by = "ID_referencia") %>% mutate(AUTORIDAD = paste(author,year.y), FECHA = paste(day,month,year.x, sep = "/"), NOMBRE_COMUN = "Encino") %>% group_by(ID_SP, genero, specificEpithet)
+
+join %>% 
+  summarise(NUMERO_DE_REGISTROS = n()) %>% 
+  mutate(sp = paste("Q.", specificEpithet)) %>%
+  ggplot(aes(y = fct_reorder(sp,NUMERO_DE_REGISTROS), x = NUMERO_DE_REGISTROS))+
+    geom_col()+
+    labs(x = "Número de registros", y = "Especie")+
+    theme_minimal()
+
+```
+
+
+# Listado preeliminar
+
+```{r}
+#| echo: false
+#| warning: false
+
+dat <- join %>%
+  select(#"FUENTE",	
+         GENERO = "genero",	
+         ESPECIE = "specificEpithet", 
+         AUTOR = "AUTORIDAD",	
+         #"SINONIMIA", 
+         "NOMBRE\nCOMUN" = "NOMBRE_COMUN",	
+         #"MUNICIPIO",	
+         #"LOCALIDAD",	
+         #LONGITUD = "decimalLongitude", 	
+         #LATITUD = "decimalLatitude",	
+         #PRECISION = "coordinateUncertaintyInMeters",	
+         #FECHA_DE_REGISTRO = "FECHA",	
+         #TIPO_DE_REGISTRO = "basisOfRecord",	
+         "ENDEMICIDAD", 	
+         "ESTATUS\nNOM" = "ESTATUS_NOM",	
+         "ESTATUS\nIUCN" = "ESTATUS_IUCN")  %>% distinct() 
+	
+         #"REFERENCIA_APA")
+
+flextable(dat) %>% fontsize(size = 8) %>% fontsize(size = 9, part = "header") 
+```
+
+
+# Bibliografía
