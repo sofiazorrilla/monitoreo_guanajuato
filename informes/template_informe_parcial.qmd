@@ -23,19 +23,22 @@ bibliography: "bibliography1.bib"
 
 ### Revisión bibliográfica
 
-La revisión bibliográfica de los encinos de Guanajuato se llevó a cabo de diferentes maneras. Por un lado, mediante la recopilación de registros en bases de datos públicas, como GBIF [@gbif_registros], que incluye datos de múltiples herbarios de México y otros países. Se filtraron los registros provenientes de Naturalista, ya que estos serán identificados y revisados durante el curso del proyecto (ver descripción más adelante). Adicionalmente, se georeferenciaron manualmente aquellos que tenían suficiente información en la descripción de la localidad de colecta, y se descartaron los registros con información geográfica insuficiente. La taxonomía de todos los registros fue actualizada utilizando el Catálogo de autoridad taxonómica del género Quercus, Fagaceae en México [@gbif_catalogo]. Finalmente, se filtraron los registros cuya elevación estuviera muy lejos del rango de elevación publicado para cada especie, para ser verificados en salidas de campo posteriores. 
+La revisión bibliográfica de los encinos de Guanajuato se llevó a cabo de tres maneras, por medio de bases de datos públicas, revisión bibliográfica de artículos y la actualización de registros de la plataforma web Naturalista [@naturalista]. La búsqueda de bases de datos se realizó mediante la plataforma GBIF, que incluye datos de múltiples herbarios de México y otros países. Se seleccionaron los registros con coordenadas y se georeferenciaron manualmente aquellos que no contaban con coordenadas pero que tuvieran suficiente información en la descripción de la localidad de colecta. La taxonomía de todos los registros fue actualizada utilizando el Catálogo de autoridad taxonómica del género Quercus, Fagaceae en México [@gbif_catalogo]. Finalmente, se filtraron los registros cuya elevación estuviera muy lejos del rango de elevación publicado para cada especie, para ser verificados en salidas de campo posteriores.
 
 <br>
 
-Adicionalmente, se realizó una búsqueda de registros y listados florísticos de Guanajuato publicados en tesis y artículos científicos utilizando las siguientes palabras clave: PALABRAS CLAVE. Para los registros obtenidos de regiones o polígonos, se utilizó el centroide del área como coordenada, y se les asignó el radio de un círculo que englobe la región como precisión. 
+Adicionalmente, se realizó una búsqueda de registros y listados florísticos de Guanajuato publicados en tesis y artículos científicos. Se utilizaron las siguientes palabras clave: "oaks", "Guanajuato", "Quercus", "México central", "Fagaceae" y buscadores como Scopus, Google Scholar, Dialnet, repositorios de tesis en línea (TESIUNAM, UGTO), etc. Para los registros obtenidos de regiones o polígonos, se utilizó el centroide del área como coordenada, y se les asignó el radio de un círculo que englobe el polígono como precisión. 
 
 <br>
 
-Por último, se revisaron los registros identificados como "Quercus" de la base de datos de Naturalista. Las imagenes con suficiente detalle fueron identificadas a nivel de especie, las demás asignarion al género. 
+Por último, se revisaron los registros identificados como "Quercus" en la región de Guanajuato de la base de datos de Naturalista. Las imagenes con suficiente detalle fueron identificadas a nivel de especie y las demás se identificaron a nivel de género. La identificación se realizó utilizando recursos bibliográficos como claves taxonómicas para el género Quercus de la región del bajío y zonas aledañas [@citas]
 
 # Resultados preeliminares
 
-Se encontraron XXX registros en GBIF, de los cuales XXX fueron manualmente georeferenciados. Los resultados preeliminares indican que hay un total de 37 especies de encino en la región. Sin embargo, los registros menos abundantes aún deben ser validados.  
+Se encontraron XXX registros en GBIF, de los cuales XXX fueron manualmente georeferenciados. Los resultados preeliminares indican que hay un total de 37 especies de encino en la región. Sin embargo, los registros menos abundantes aún deben ser validados. Adicionalmente, en la revisión bibliográfica se encontraron XX artículos y XX tesis de los cuales se obtuvieron XX número de registros que corresponden a XX especies.
+
+Las especies con más registros fueron *Quercus rugosa* (X%) seguida de *Q. eduardii* (X%) y *Q. potosina* (X%). En contraste, X% de las especies tienen menos de cinco registros [@fig-barras]. Las regiones dentro de Guanajuato que tuvieron un mayor número de registros fueron XX y XX. Preeliminarmente, se identificaron las zonas de XX y XX como posibles localidades de colecta. 
+
 
 ```{r}
 #| echo: false
