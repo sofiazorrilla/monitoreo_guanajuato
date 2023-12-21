@@ -8,6 +8,7 @@ author:
 date: today
 language: 
   title-block-author-single: "Responsable"
+  crossref-fig-title: "Figura"
 format:
   docx:
     reference-doc: "estilos.docx"
@@ -16,14 +17,14 @@ format:
     # toc-title: "Contenido"
 fig-dpi: 300
 output-file: "primer_informe.docx"
-bibliography: "bibliography1.bib"
+bibliography: ["bibliography1.bib","bibliography2.bib"]
 ---
 
 # Métodos
 
 ### Revisión bibliográfica
 
-La revisión bibliográfica de los encinos de Guanajuato se llevó a cabo de tres maneras: (i) por medio de bases de datos públicas, (iii) por revisión bibliográfica de artículos y (iii) la actualización de registros de la plataforma web Naturalista [@naturalista]. La búsqueda de bases de datos se realizó mediante la plataforma GBIF, que incluye datos de múltiples herbarios de México y otros países. Se seleccionaron los registros con coordenadas y se georeferenciaron manualmente aquellos que no contaban con coordenadas pero que tuvieran suficiente información en la descripción de la localidad de colecta. La taxonomía de todos los registros fue actualizada utilizando el Catálogo de autoridad taxonómica del género Quercus, Fagaceae en México [@gbif_catalogo]. Finalmente, se filtraron los registros cuya elevación estuviera muy lejos del rango de elevación publicado para cada especie, para ser verificados en salidas de campo posteriores.
+La revisión bibliográfica de los encinos de Guanajuato se llevó a cabo de tres maneras: (i) por medio de bases de datos públicas, (iii) por revisión bibliográfica de artículos y (iii) la actualización de registros de la plataforma web Naturalista. Disponible en https://www.naturalist.mx. La búsqueda de bases de datos se realizó mediante la plataforma GBIF, que incluye datos de múltiples herbarios de México y otros países. Se seleccionaron los registros con coordenadas y se georeferenciaron manualmente aquellos que no contaban con coordenadas pero que tuvieran suficiente información en la descripción de la localidad de colecta. La taxonomía de todos los registros fue actualizada utilizando el Catálogo de autoridad taxonómica del género Quercus, Fagaceae en México [@gbif_catalogo]. Finalmente, se filtraron los registros cuya elevación estuviera muy lejos del rango de elevación publicado para cada especie, para ser verificados en salidas de campo posteriores.
 
 <br>
 
@@ -31,13 +32,13 @@ Adicionalmente, se realizó una búsqueda de registros y listados florísticos d
 
 <br>
 
-Por último, se revisaron los registros identificados como "Quercus" en la región de Guanajuato de la base de datos de Naturalista. Las imagenes con suficiente detalle fueron identificadas a nivel de especie y las demás se identificaron a nivel de género. La identificación se realizó utilizando recursos bibliográficos como claves taxonómicas para el género Quercus de la región del bajío y zonas aledañas [@citas]
+Por último, se revisaron los registros identificados como "Quercus" en la región de Guanajuato de la base de datos de Naturalista. Las imagenes con suficiente detalle fueron identificadas a nivel de especie y las demás se identificaron a nivel de género. La identificación se realizó utilizando recursos bibliográficos como claves taxonómicas para el género Quercus de la región del bajío y zonas aledañas [@calderonderzedowski2005; @perezmojica2017; @rangel2002; @romerorangel2014; @valencia-a.2017]
 
 # Resultados preeliminares
 
-Se encontraron  registros en GBIF, de los cuales XXX fueron manualmente georeferenciados. Los resultados preeliminares indican que hay un total de 37 especies de encino en la región. Sin embargo, los registros menos abundantes aún deben ser validados. Adicionalmente, en la revisión bibliográfica se encontraron 10 artículos científicos y 2 tesis de los cuales se obtuvieron 105 registros que corresponden a 25 especies de encinos.
+Se encontraron 1455  registros en GBIF, de los cuales 620 están en proceso de ser manualmente georeferenciados. Los resultados preeliminares indican que hay un total de 37 especies de encino en la región. Sin embargo, los registros menos abundantes aún deben ser validados. Adicionalmente, en la revisión bibliográfica se encontraron 10 artículos científicos y 2 tesis de los cuales se obtuvieron 105 registros que corresponden a 25 especies de encinos.
 
-Las especies con más registros fueron *Quercus rugosa* (X%) seguida de *Q. eduardii* (X%) y *Q. potosina* (X%). En contraste, X% de las especies tienen menos de cinco registros [@fig-barras]. Las regiones dentro de Guanajuato que tuvieron un mayor número de registros fueron XX y XX. Preeliminarmente, se identificaron las zonas de XX y XX como posibles localidades de colecta. 
+Las especies con más registros fueron *Quercus rugosa* (11%) seguida de *Q. eduardii* (10%) y *Q. potosina* (8%). En contraste, 43% de las especies tienen menos de cinco registros ([@fig-barras]). Las regiones dentro de Guanajuato que tuvieron un mayor número de registros fueron en el noroeste y el noreste en las sierras y zonas aledañas de Sierra de Lobos, Santa Rosa y la Sierra Gorda ([@fig-mapa]). 
 
 
 ```{r}
@@ -45,6 +46,8 @@ Las especies con más registros fueron *Quercus rugosa* (X%) seguida de *Q. edua
 #| warning: false
 #| fig-width: 9
 #| fig-height: 5
+#| label: fig-barras
+#| fig-cap: Número de registros por especie
 
 
 library(tidyverse)
@@ -62,11 +65,52 @@ join <- left_join(data,tax,by = "ID_SP") %>% left_join(ref,by = "ID_referencia")
 
 join %>% 
   summarise(NUMERO_DE_REGISTROS = n()) %>% 
+  #mutate(porcentaje = (NUMERO_DE_REGISTROS*100)/sum(.$NUMERO_DE_REGISTROS)) %>% filter(NUMERO_DE_REGISTROS<5) %>% view
   mutate(sp = paste("Q.", specificEpithet)) %>%
   ggplot(aes(y = fct_reorder(sp,NUMERO_DE_REGISTROS), x = NUMERO_DE_REGISTROS))+
     geom_col()+
     labs(x = "Número de registros", y = "Especie")+
     theme_minimal()
+
+```
+
+
+
+
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: fig-mapa
+#| fig-cap: Mapa de resultados preeliminares de registros de encinos de Guanajuato. 
+
+
+
+
+library(sf)
+suppressMessages({
+  borde <- st_read("../division_politica/m_g_m_10.shp", quiet = T) 
+})
+# Define the CRS for EPSG:900913 (Web Mercator)
+crs_900913 <- st_crs("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs")
+
+# Assign the CRS to the shapefile
+borde <- st_set_crs(borde, crs_900913) %>%  st_transform(., "+proj=longlat +datum=WGS84")
+
+suppressMessages({
+  uso_suelo <- st_read("../uso_de_suelo_2014/usvedo_14.shp", quiet = T) %>%  st_set_crs(., crs_900913) %>%  st_transform(., "+proj=longlat +datum=WGS84") %>% filter(formacion == "Bosques")
+  
+})
+
+ggplot()+
+  geom_sf(data = uso_suelo, fill = "darkgreen", alpha = 0.5, color = "darkgreen")+
+  geom_sf(data = borde, fill = "transparent",color = "darkgray", size = 1.5)+
+  geom_point(data = join, aes(x = decimalLongitude, y = decimalLatitude), fill = "darkgoldenrod2", shape = 21, color = "black")+
+  theme_void()+
+  theme(legend.position = "none")
+
+
 
 ```
 
@@ -100,5 +144,5 @@ dat <- join %>%
 flextable(dat) %>% fontsize(size = 8) %>% fontsize(size = 9, part = "header") 
 ```
 
-cambio2
+
 # Bibliografía
