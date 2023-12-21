@@ -40,6 +40,8 @@ Se encontraron 1455  registros en GBIF, de los cuales 620 están en proceso de s
 
 Las especies con más registros fueron *Quercus rugosa* (11%) seguida de *Q. eduardii* (10%) y *Q. potosina* (8%). En contraste, 43% de las especies tienen menos de cinco registros ([@fig-barras]). Las regiones dentro de Guanajuato que tuvieron un mayor número de registros fueron en el noroeste y el noreste en las sierras y zonas aledañas de Sierra de Lobos, Santa Rosa y la Sierra Gorda ([@fig-mapa]). 
 
+Finalmente, se encontraron 842 registros de encinos en Naturalista, de los cuales se ha revisado el 24% hasta el momento.
+
 
 ```{r}
 #| echo: false
