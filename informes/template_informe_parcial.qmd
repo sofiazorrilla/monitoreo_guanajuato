@@ -23,7 +23,7 @@ bibliography: "bibliography1.bib"
 
 ### Revisión bibliográfica
 
-La revisión bibliográfica de los encinos de Guanajuato se llevó a cabo de tres maneras, por medio de bases de datos públicas, revisión bibliográfica de artículos y la actualización de registros de la plataforma web Naturalista [@naturalista]. La búsqueda de bases de datos se realizó mediante la plataforma GBIF, que incluye datos de múltiples herbarios de México y otros países. Se seleccionaron los registros con coordenadas y se georeferenciaron manualmente aquellos que no contaban con coordenadas pero que tuvieran suficiente información en la descripción de la localidad de colecta. La taxonomía de todos los registros fue actualizada utilizando el Catálogo de autoridad taxonómica del género Quercus, Fagaceae en México [@gbif_catalogo]. Finalmente, se filtraron los registros cuya elevación estuviera muy lejos del rango de elevación publicado para cada especie, para ser verificados en salidas de campo posteriores.
+La revisión bibliográfica de los encinos de Guanajuato se llevó a cabo de tres maneras: (i) por medio de bases de datos públicas, (iii) por revisión bibliográfica de artículos y (iii) la actualización de registros de la plataforma web Naturalista [@naturalista]. La búsqueda de bases de datos se realizó mediante la plataforma GBIF, que incluye datos de múltiples herbarios de México y otros países. Se seleccionaron los registros con coordenadas y se georeferenciaron manualmente aquellos que no contaban con coordenadas pero que tuvieran suficiente información en la descripción de la localidad de colecta. La taxonomía de todos los registros fue actualizada utilizando el Catálogo de autoridad taxonómica del género Quercus, Fagaceae en México [@gbif_catalogo]. Finalmente, se filtraron los registros cuya elevación estuviera muy lejos del rango de elevación publicado para cada especie, para ser verificados en salidas de campo posteriores.
 
 <br>
 
@@ -35,7 +35,7 @@ Por último, se revisaron los registros identificados como "Quercus" en la regi�
 
 # Resultados preeliminares
 
-Se encontraron XXX registros en GBIF, de los cuales XXX fueron manualmente georeferenciados. Los resultados preeliminares indican que hay un total de 37 especies de encino en la región. Sin embargo, los registros menos abundantes aún deben ser validados. Adicionalmente, en la revisión bibliográfica se encontraron XX artículos y XX tesis de los cuales se obtuvieron XX número de registros que corresponden a XX especies.
+Se encontraron  registros en GBIF, de los cuales XXX fueron manualmente georeferenciados. Los resultados preeliminares indican que hay un total de 37 especies de encino en la región. Sin embargo, los registros menos abundantes aún deben ser validados. Adicionalmente, en la revisión bibliográfica se encontraron 10 artículos científicos y 2 tesis de los cuales se obtuvieron 105 registros que corresponden a 25 especies de encinos.
 
 Las especies con más registros fueron *Quercus rugosa* (X%) seguida de *Q. eduardii* (X%) y *Q. potosina* (X%). En contraste, X% de las especies tienen menos de cinco registros [@fig-barras]. Las regiones dentro de Guanajuato que tuvieron un mayor número de registros fueron XX y XX. Preeliminarmente, se identificaron las zonas de XX y XX como posibles localidades de colecta. 
 
