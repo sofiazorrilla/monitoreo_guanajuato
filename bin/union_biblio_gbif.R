@@ -60,7 +60,9 @@ join_gbif_tax <- left_join(gbif,tax,by = "ID_SP") %>%
   
 join_gbif <- join_gbif_tax %>% left_join(ref,by = "ID_referencia") %>%
   mutate(AUTORIDAD = paste(author,yearAuth), 
-         FECHA = paste(day,month,year, sep = "/"), 
+         FECHA = paste(day,month,year, sep = "/"),
+         decimalLatitude = as.numeric(decimalLatitude),
+         decimalLongitude = as.numeric(decimalLongitude),
          NOMBRE_COMUN = "Encino", 
          PHYLUM = "Tracheophyta",
          CLASE = "Magnoliopsida",
@@ -108,7 +110,7 @@ biblio <- filter(biblio, !is.na(LONGITUD))
 join_biblo <- biblio %>% 
   mutate(specificEpithet = ifelse(!is.na(sinonimia),sinonimia,specificEpithet), `TIPO DE REGISTRO` = "articulo") %>% 
   mutate(LONGITUD = as.numeric(LONGITUD), LATITUD = as.numeric(LATITUD)) %>% 
-  left_join(tax,by = "specificEpithet")
+  left_join(tax,by = c("genero" = "genero","specificEpithet"="specificEpithet"))
   
 ## Añadir columna de elevación
 
@@ -173,4 +175,15 @@ left_join(ref,by = "ID_referencia") %>%
 
 join = bind_rows(join_gbif,join_biblo)
 
-write_sheet(ss=ss,join,sheet = "joinDic2023")
+write_sheet(ss=ss,join,sheet = "joinFeb2023")
+
+
+################################################
+### Lista de especies ##########################
+################################################
+
+
+especies <- join %>% group_by(GENERO,ESPECIE, AUTOR, NOMBRE_COMUN, ENDEMICIDAD, ESTATUS_NOM, ESTATUS_IUCN) %>% summarise(NUM_REGISTROS = n()) %>% arrange(desc(NUM_REGISTROS)) %>% mutate(perc = NUM_REGISTROS*100/899)
+
+
+especies %>% select(-c(NUM_REGISTROS, perc)) %>% write_sheet(ss=ss,.,sheet = "especiesFeb2023")
