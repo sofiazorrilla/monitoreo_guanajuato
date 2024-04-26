@@ -55,6 +55,13 @@ join_gbif_tax <- left_join(gbif,tax,by = "ID_SP") %>%
   rowwise() %>% 
   mutate(inRange = check_elev(elev = elevation_y, minLim = Limite_altitudinal_min, maxLim = Limite_altitudinal_max, sd = sd_elev)) %>% ungroup()
 
+## Anotar municipio con un gazeteer
+
+library(tidygeocoder)
+
+county_gbif <- join_gbif_tax %>% tidygeocoder::reverse_geocode(lat = decimalLatitude, long = decimalLongitude, method = 'osm', full_results = T) %>% select(county)
+
+join_gbif_tax$MUNICIPIO <- county_gbif$county
 
 ## Unir datos de GBIF con referencias y seleccionar las columnas pertinentes para el reporte
   
@@ -148,7 +155,8 @@ left_join(ref,by = "ID_referencia") %>%
          ORDEN = "Fagales",
          FAMILIA = "Fagaceae",
          ESTATUS_NOM = "Ausente",
-         OBSERVACIONES = NA
+         OBSERVACIONES = NA, 
+         TIPO_DE_REGISTRO = "REFERENCIA_BIBLIOGRAFICA"
   ) %>% 
   select(FUENTE, 
          PHYLUM,
@@ -173,9 +181,91 @@ left_join(ref,by = "ID_referencia") %>%
          REFERENCIA_APA,
          OBSERVACIONES)
 
-join = bind_rows(join_gbif,join_biblo)
+################################################
+##### Datos de naturalista #####################
+################################################
 
-write_sheet(ss=ss,join,sheet = "joinFeb2023")
+naturalista <- read_sheet(ss, sheet = "naturalista_042024") %>% select(fecha = observed_on, naturalista_id = id, localidad = place_guess, latitude, longitude, positional_accuracy, scientific_name)
+
+## Añadir columna de elevación
+
+coords <- naturalista[,c("longitude","latitude")]
+crs <- 4326
+coords_sf <- st_as_sf(coords, coords = c("longitude","latitude"), crs = crs)
+elev <- elevatr::get_elev_point(coords_sf, prj = crs, src = "epqs") |> as.data.frame()
+naturalista$elevation <- elev$elevation
+
+## Anotar municipio con un gazeteer
+
+county <- naturalista %>% tidygeocoder::reverse_geocode(lat = latitude, long = longitude, method = 'osm', full_results = T) %>% select(county)
+
+naturalista$MUNICIPIO <- county$county
+
+## Revisar rangos de elevación
+
+nat <-  naturalista %>% 
+  separate(scientific_name, into = c("genero", "specificEpithet")) %>% 
+  drop_na(specificEpithet) %>% 
+  left_join(tax,by = c("genero" = "genero","specificEpithet"="specificEpithet")) %>% 
+  group_by(specificEpithet) %>% 
+  mutate(elevation_y = as.numeric(elevation),
+         Limite_altitudinal_max = as.numeric(Limite_altitudinal_max),
+         Limite_altitudinal_min = as.numeric(Limite_altitudinal_min),
+         mean_elev = mean(elevation), 
+         sd_elev = sd(elevation)) %>% 
+  rowwise() %>% 
+  mutate(inRange = check_elev(elev = elevation, minLim = Limite_altitudinal_min, maxLim = Limite_altitudinal_max, sd = sd_elev))%>% ungroup()
+
+
+## Cuantos registros de cada categoria de la columna inRange hay
+table(nat$inRange)
+
+## Union con taxonomia y selección de columnas
+
+naturalista_tabla <- nat %>% mutate(AUTORIDAD = paste(author,yearAuth), 
+       NOMBRE_COMUN = "Encino",
+       PHYLUM = "Tracheophyta",
+       CLASE = "Magnoliopsida",
+       ORDEN = "Fagales",
+       FAMILIA = "Fagaceae",
+       ESTATUS_NOM = "Ausente",
+       OBSERVACIONES = NA,
+       FUENTE = "Naturalista",
+       TIPO_DE_REGISTRO = "HUMAN_OBSERVATION",
+       REFERENCIA_APA = paste("Observaciones de Quercus de Guanajuato, México observada en",fecha,"Exportada de https://www.inaturalist.org en 2024-04-26"), 
+       positional_accuracy = as.character(positional_accuracy),
+       fecha = as.character(fecha)
+) %>% 
+  select(FUENTE, 
+         PHYLUM,
+         CLASE,
+         ORDEN,
+         FAMILIA,
+         GENERO = genero, 
+         ESPECIE = specificEpithet,
+         AUTOR = AUTORIDAD, 
+         SINONIMIA,
+         NOMBRE_COMUN, 
+         MUNICIPIO,
+         LOCALIDAD = localidad,
+         LONGITUD = longitude,
+         LATITUD = latitude,
+         PRECISION = positional_accuracy,
+         `FECHA DE REGISTRO` = fecha,
+         TIPO_DE_REGISTRO,
+         ENDEMICIDAD,
+         ESTATUS_NOM,
+         ESTATUS_IUCN,
+         REFERENCIA_APA,
+         OBSERVACIONES) 
+
+################################################
+##### Union ####################################
+################################################
+
+join = bind_rows(join_gbif,join_biblo, naturalista_tabla) %>% mutate(`FECHA DE REGISTRO` = ifelse(str_detect(`FECHA DE REGISTRO`,"NA"),NA,`FECHA DE REGISTRO`))
+
+write_sheet(ss=ss,join,sheet = "joinAbr2023")
 
 
 ################################################
@@ -186,4 +276,4 @@ write_sheet(ss=ss,join,sheet = "joinFeb2023")
 especies <- join %>% group_by(GENERO,ESPECIE, AUTOR, NOMBRE_COMUN, ENDEMICIDAD, ESTATUS_NOM, ESTATUS_IUCN) %>% summarise(NUM_REGISTROS = n()) %>% arrange(desc(NUM_REGISTROS)) %>% mutate(perc = NUM_REGISTROS*100/899)
 
 
-especies %>% select(-c(NUM_REGISTROS, perc)) %>% write_sheet(ss=ss,.,sheet = "especiesFeb2023")
+especies %>% select(-c(NUM_REGISTROS, perc)) %>% write_sheet(ss=ss,.,sheet = "especiesAbr2023")
