@@ -1,10 +1,20 @@
-
+######
+# Script : Unión de tablas de registros de GBIF, bibliografía y Naturalista
+# Author: Sofía Zorrilla
+# Date: 2024-06-24
+# Description: Funciones para revisar las tablas, hacer modificaciones de acuerdo al formato del reporte bimestral y unir las tablas de registros de GBIF, bibliografía y Naturalista.
+# Arguments:
+#   - Input: 
+#       - Hoja de google sheet con los registros que hemos encontrado: "https://docs.google.com/spreadsheets/d/12eHA_LwHQ2m2EG441GP8XkquLYURjJfHkVZ2h699ZGM/edit?usp=sharing"
+#   - Output: 
+#######
 
 
 library(tidyverse)
 library(googlesheets4)
 library('elevatr')
 library(sf)
+library(googledrive)
 
 ##################
 ### Funciones ###
@@ -20,14 +30,20 @@ library(sf)
 # Ambas tablas deben tener una columna de ID_SP con la que se puedan unir 
 
 
-check_elev <- function(elev, maxLim, minLim, sd){
+check_elev <- function(elev, maxLim, minLim, tolerance){
+  #' Check elevation 
+  #' 
+  #' @description Check if record elevation is within published range
+  #' @param elev Observed elevation
+  #' @param maxLim Maximum published elevation for that species
+  #' @param tolerance Tolerance in meters to determine if the elevation is within published elevation
+  #' @return Numeric value to determine wether the observed elevation is within range (1) or not (0)
+ 
   ifelse(elev >= minLim & elev <= maxLim, 
          return(1),
-         ifelse(elev >= (minLim-sd) & elev <= (maxLim+sd), return(2),
+         ifelse(elev >= (minLim-tolerance) & elev <= (maxLim+tolerance), return(2),
                 return(0)))
 }
-
-
 
 
 
@@ -50,10 +66,10 @@ join_gbif_tax <- left_join(gbif,tax,by = "ID_SP") %>%
   mutate(elevation_y = as.numeric(elevation_y),
          Limite_altitudinal_max = as.numeric(Limite_altitudinal_max),
          Limite_altitudinal_min = as.numeric(Limite_altitudinal_min),
-         mean_elev = mean(elevation_y), 
-         sd_elev = sd(elevation_y)) %>% 
+         mean_elev = mean(elevation_y, na.rm = T), 
+         sd_elev = sd(elevation_y, na.rm = T)) %>% 
   rowwise() %>% 
-  mutate(inRange = check_elev(elev = elevation_y, minLim = Limite_altitudinal_min, maxLim = Limite_altitudinal_max, sd = sd_elev)) %>% ungroup()
+  mutate(inRange = check_elev(elev = elevation_y, minLim = Limite_altitudinal_min, maxLim = Limite_altitudinal_max, tolerance = sd_elev)) %>% ungroup()
 
 ## Anotar municipio con un gazeteer
 
@@ -138,7 +154,7 @@ join_biblo <- join_biblo %>%
          mean_elev = mean(elevation), 
          sd_elev = sd(elevation)) %>% 
   rowwise() %>% 
-  mutate(inRange = check_elev(elev = elevation, minLim = Limite_altitudinal_min, maxLim = Limite_altitudinal_max, sd = sd_elev))%>% ungroup()
+  mutate(inRange = check_elev(elev = elevation, minLim = Limite_altitudinal_min, maxLim = Limite_altitudinal_max, tolerance = sd_elev))%>% ungroup()
 
 
 ## Cuantos registros de cada categoria de la columna inRange hay
@@ -185,7 +201,7 @@ left_join(ref,by = "ID_referencia") %>%
 ##### Datos de naturalista #####################
 ################################################
 
-naturalista <- read_sheet(ss, sheet = "naturalista_042024") %>% select(fecha = observed_on, naturalista_id = id, localidad = place_guess, latitude, longitude, positional_accuracy, scientific_name)
+naturalista <- read_sheet(ss, sheet = "naturalista_062024") %>% select(fecha = observed_on, naturalista_id = id, localidad = place_guess, latitude, longitude, positional_accuracy, scientific_name, url) 
 
 ## Añadir columna de elevación
 
@@ -206,15 +222,16 @@ naturalista$MUNICIPIO <- county$county
 nat <-  naturalista %>% 
   separate(scientific_name, into = c("genero", "specificEpithet")) %>% 
   drop_na(specificEpithet) %>% 
+  mutate(specificEpithet = str_replace(specificEpithet,"eduardii$","eduardi")) %>% 
   left_join(tax,by = c("genero" = "genero","specificEpithet"="specificEpithet")) %>% 
   group_by(specificEpithet) %>% 
   mutate(elevation_y = as.numeric(elevation),
          Limite_altitudinal_max = as.numeric(Limite_altitudinal_max),
          Limite_altitudinal_min = as.numeric(Limite_altitudinal_min),
-         mean_elev = mean(elevation), 
-         sd_elev = sd(elevation)) %>% 
+         mean_elev = mean(elevation, na.rm = T), 
+         sd_elev = sd(elevation, na.rm = T)) %>% 
   rowwise() %>% 
-  mutate(inRange = check_elev(elev = elevation, minLim = Limite_altitudinal_min, maxLim = Limite_altitudinal_max, sd = sd_elev))%>% ungroup()
+  mutate(inRange = check_elev(elev = elevation, minLim = Limite_altitudinal_min, maxLim = Limite_altitudinal_max, tolerance = sd_elev))%>% ungroup()
 
 
 ## Cuantos registros de cada categoria de la columna inRange hay
@@ -232,7 +249,7 @@ naturalista_tabla <- nat %>% mutate(AUTORIDAD = paste(author,yearAuth),
        OBSERVACIONES = NA,
        FUENTE = "Naturalista",
        TIPO_DE_REGISTRO = "HUMAN_OBSERVATION",
-       REFERENCIA_APA = paste("Observaciones de Quercus de Guanajuato, México observada en",fecha,"Exportada de https://www.inaturalist.org en 2024-04-26"), 
+       REFERENCIA_APA = paste("Observaciones de Quercus de Guanajuato, México observada en",fecha,"Exportada de", url, "en 2024-04-26"),
        positional_accuracy = as.character(positional_accuracy),
        fecha = as.character(fecha)
 ) %>% 
@@ -265,7 +282,9 @@ naturalista_tabla <- nat %>% mutate(AUTORIDAD = paste(author,yearAuth),
 
 join = bind_rows(join_gbif,join_biblo, naturalista_tabla) %>% mutate(`FECHA DE REGISTRO` = ifelse(str_detect(`FECHA DE REGISTRO`,"NA"),NA,`FECHA DE REGISTRO`))
 
-write_sheet(ss=ss,join,sheet = "joinAbr2023")
+write_sheet(ss=ss,join,sheet = "joinJun2024")
+
+sheet_write(ss = 'https://docs.google.com/spreadsheets/d/1DDREtPHXnwd30S77FGgYme9Zv1QhBcuMooE8VeQJO98/edit?usp=sharing', join, sheet = "reporte_bim_Jun2024")
 
 
 ################################################
@@ -276,4 +295,63 @@ write_sheet(ss=ss,join,sheet = "joinAbr2023")
 especies <- join %>% group_by(GENERO,ESPECIE, AUTOR, NOMBRE_COMUN, ENDEMICIDAD, ESTATUS_NOM, ESTATUS_IUCN) %>% summarise(NUM_REGISTROS = n()) %>% arrange(desc(NUM_REGISTROS)) %>% mutate(perc = NUM_REGISTROS*100/899)
 
 
-especies %>% select(-c(NUM_REGISTROS, perc)) %>% write_sheet(ss=ss,.,sheet = "especiesAbr2023")
+especies %>% select(-c(NUM_REGISTROS, perc)) %>% write_sheet(ss=ss,.,sheet = "especiesJun2024")
+
+
+##############################################
+####### Tabla de registros de campo ##########
+##############################################
+
+## Links para resultados de campo
+
+links <- list(
+  zamorano = "https://docs.google.com/spreadsheets/d/1dymbG-dIjeXGbZNJ_-4p44JDXZDvfKNcnfdRCtS4Tu0/edit?usp=sharing",
+  ElMilagro = "https://docs.google.com/spreadsheets/d/1SBwAOHJzj9mx-gZ2Qh28ddHTIrRZcJoBuP7coexH17Y/edit?usp=sharing",
+  ElPlatanal = "https://docs.google.com/spreadsheets/d/1Q0Opw6UTIkwRMabAbcWCRXcAG15sq-2u7M1LR9vxYJI/edit?usp=sharing"
+)
+
+
+resultados <- lapply(links, function(x){read_sheet(ss = x, sheet = "individuos")})
+
+res <- do.call(rbind, resultados) %>% 
+  mutate(Nombre_cientifico = str_replace(Nombre_cientifico,"eduardii$","eduardi")) %>% 
+  left_join(tax, by = c("Nombre_cientifico" = "specificEpithet")) %>% 
+  drop_na(Nombre_cientifico) %>% 
+  mutate(
+    Fecha_colecta = as.Date(Fecha_colecta, format = "%Y-%m-%d"),
+    FUENTE = "COPANABIS",
+    PHYLUM = "Tracheophyta",
+    CLASE = "Magnoliopsida",
+    ORDEN = "Fagales",
+    FAMILIA = "Fagaceae",
+    GENERO = "Quercus",
+    `TIPO DE REGISTRO` = "Ejemplar",
+    REFERENCIA = "",
+    OBSERVACIONES = ""
+  ) %>% 
+  select(
+    FUENTE,
+    PHYLUM,
+    CLASE,
+    ORDEN,
+    FAMILIA,
+    GENERO,
+    ESPECIE = Nombre_cientifico,
+    MUNICIPIO = Municipio,
+    LOCALIDAD = Localidad,
+    LONGITUD = Longitud,
+    LATITUD = Latitud,
+    `PRECISIÓN` = Prec_horizontal,
+    `FECHA DE REGISTRO` = Fecha_colecta,
+    `TIPO DE REGISTRO`,
+    ENDEMICIDAD = ENDEMICIDAD,
+    `ESTATUS NOM` = ESTATUS_NOM,
+    `ESTATUS IUCN` = ESTATUS_IUCN,
+    FOTOGRAFIA = IMG_haz,
+    REFERENCIA,
+    OBSERVACIONES
+  )
+
+## Guardar resultados en tabla MONITOREO_GTO
+
+write_sheet(ss = "https://docs.google.com/spreadsheets/d/1_T7Nepun1NkBRrxgV7o2ERifF4QufFCa0ucs-XSwKr4/edit?usp=sharing", res)
