@@ -1,24 +1,48 @@
+######
+# Script : Organizar y exportar fotos de especies
+# Author: Sofía Zorrilla
+# Date: 2024-06-24
+# Description: Enlistar las fotos de las carpetas de fotos de los ejemplares, seleccionar las que fueron elegidas como representante del individuo y guardarlas en carpetas nombradas por especie.
+# Arguments:
+#   - Input: 
+#       - ID de los folders de las imagenes de los ejemplares
+#       - Tabla de resultados de campo 
+#   - Output: 
+#       - Carpetas de especies con con una foto por individuo.
+#######
+
+### --- Load packages ---
+
 library(googledrive)
 library(googlesheets4)
 library(tidyverse)
 
+### --- Script ---
+
 # Set the path to your Google Drive folder
-folder_path <- "1oVM8bS30-LXZ4uWkFdqOFCuTjV3I5JMA" # Folder de la salida de Zamorano2024
+folder_paths <- list(
+  zamorano = "1oVM8bS30-LXZ4uWkFdqOFCuTjV3I5JMA", # Folder de la salida de Zamorano2024
+  platanal = "1zSTdUz0Bb32kun_aknpHL49tTFiHR-Nc",
+  ElMilagro = "1aPLVI1-2BwYpaHd1j1jV4QiGkVWb-RbK"
+  )
 
 
 # Authenticate with your Google account
 drive_auth()
 
 # Get the list of files in the folder and its subfolders
-files <- drive_ls(as_id(folder_path), recursive = TRUE)
+files <- lapply(folder_paths, function(folder_path) drive_ls(as_id(folder_path), recursive = TRUE))
 
 # Function to read files in folders. El resultado es un 
 # df con el nombre del folder, los archivos que hay dentro
 # y el id de los archivos
 
 read_files_in_folders <- function(folder_path) {
-  # Get the list of files in the folder and its
-  # subfolders
+  #' Read files from folders
+  #' @description Get the list of files in the folder and its subfolders
+  #' @param folder_path Google drive folder path
+  #' @result df con el codigo de colecta, nombre del archivo y id de la fotografia
+
   # Initialize empty lists for folder names and
   folders <- drive_ls(as_id(folder_path), recursive = FALSE)
 
@@ -41,37 +65,31 @@ read_files_in_folders <- function(folder_path) {
 }
 
 # Call the function with the folder path
-result <- read_files_in_folders(folder_path) %>% 
-    rename("codigo_colecta" = "folder")
+
+result_list <- lapply(folder_paths, function(folder_path){read_files_in_folders(folder_path) %>% 
+    rename("codigo_colecta" = "folder")}) %>% do.call(rbind,.)
 
 # read results sheet
-metadata <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1dymbG-dIjeXGbZNJ_-4p44JDXZDvfKNcnfdRCtS4Tu0/edit?usp=sharing", 
-                       sheet = "individuos",
-                       col_types = "iicccccccidddcccccDcc")
+metadata <- read_sheet(ss = "https://docs.google.com/spreadsheets/d/1_T7Nepun1NkBRrxgV7o2ERifF4QufFCa0ucs-XSwKr4/edit?usp=sharing")
 
 # Manipulación del df para unir los metadatos, asignar nombres de las 
 # carpetas en las que voy a guardar las fotos y asignar los nuevos nombres
 # de archivos
 
-datos_fotos <- left_join(metadata, result, by = "codigo_colecta") %>% 
-  select(id_individuo, 
-    codigo_colecta,
-    epiteto = Nombre_cientifico, 
-    id_foto_campo = files, 
+datos_fotos <- left_join(metadata, result_list, by = c("FOTOGRAFIA" = "files")) %>% 
+  select(codigo_colecta,
+    ESPECIE, 
+    id_foto_campo = FOTOGRAFIA, 
     id_foto_GD = id) %>% 
-    mutate(genero = "Quercus", .before = epiteto) %>% 
-    group_by(epiteto) %>% 
-    mutate(nombre_carpeta = paste0("Q.",epiteto)) %>% 
-    group_by(id_individuo) %>% 
-    mutate(num_foto = row_number(), new_file_name = paste0("idInd_", id_individuo,"_",num_foto,".jpg"))
+    mutate(genero = "Quercus", .before = ESPECIE) %>% 
+    group_by(ESPECIE) %>% 
+    mutate(nombre_carpeta = paste0("Q.",ESPECIE)) 
 
 # NOTE: Extraer los nombres unicos de las carpetas que hay que crear 
 
 folder_names <- datos_fotos  %>% 
     .$nombre_carpeta %>% 
     unique()
-
-# TODO: revisar si la condicional para revisar si la carpeta existe antes de crearla funciona
 
 folders <- drive_ls(as_id("16gBA_trCi7HRrliQLLvk1VwgY3Kvx257"), recursive = FALSE)
 
@@ -82,7 +100,6 @@ for(i in seq_along(folder_names)){
 }
 
 # Actualizar la lista de carpetas
-# TODO: Revisar si la parte de type="folder" funciona
 
 folders <- drive_ls(as_id("16gBA_trCi7HRrliQLLvk1VwgY3Kvx257"), type = "folder", recursive = FALSE)
 
@@ -90,7 +107,7 @@ folders <- drive_ls(as_id("16gBA_trCi7HRrliQLLvk1VwgY3Kvx257"), type = "folder",
 for(i in seq_len(nrow(datos_fotos))){
     destination_folder <- folders[which(datos_fotos$nombre_carpeta[i] == folders$name),]$id
 
-    drive_cp(datos_fotos$id_foto_GD[i],path = destination_folder, name = datos_fotos$new_file_name[i])
+    drive_cp(datos_fotos$id_foto_GD[i],path = destination_folder, name = datos_fotos$id_foto_campo[i])
 }
 
 
